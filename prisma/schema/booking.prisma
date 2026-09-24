@@ -1,0 +1,19 @@
+model Booking{
+    id String @id @default(uuid())
+    status STATUS @default(PENDING)
+    startTime  DateTime
+    endTime    DateTime
+    user User @relation(fields: [userId], references: [id])
+    userId String
+    resource Resource @relation(fields: [resourceId], references: [id])
+    resourceId String
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+}
+
+enum STATUS {
+     PENDING
+     CONFIRMED
+     CANCELLED
+}
