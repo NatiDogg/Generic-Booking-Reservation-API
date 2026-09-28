@@ -10,18 +10,28 @@ export class JwtService{
         constructor(private readonly configService:ConfigService<envConfig>){}
 
       createAccessToken(userPayload: {id: string, name: string, email: string, role:Role}){
-          return jwt.sign(userPayload)
+          return jwt.sign(userPayload, this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN'),{expiresIn: '20m'})
       }
 
-      createRefreshToken(){
-
+      createRefreshToken(userPayload: {id: string, name: string, email: string, role:Role}){
+         return jwt.sign(userPayload, this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN'),{expiresIn: '20m'})
       }
-      verifyAccessToken(){
-
+      verifyAccessToken(token: string){
+         return jwt.verify(token, this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN')) as {
+               id: string,
+               name: string,
+               email: string,
+               role: Role
+         }
       }
 
-      verifyRefreshToken(){
-
+      verifyRefreshToken(token: string){
+          return jwt.verify(token, this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN')) as {
+               id: string,
+               name: string,
+               email: string,
+               role: Role
+         }
       }
 
 
