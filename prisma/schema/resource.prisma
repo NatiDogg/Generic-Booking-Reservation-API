@@ -1,0 +1,13 @@
+model Resource{
+    id String @id @default(uuid())
+    name String
+    description String
+    isActive Boolean
+    location String
+    price Int
+    bookings Booking[]
+    schedules Schedule[]
+      createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+}
