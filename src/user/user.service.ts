@@ -27,6 +27,10 @@ export class UserService {
             return await this.prisma.user.findUnique({where: {email}})
          }
 
+         async findUserById(id: string){
+            return await this.prisma.user.findUnique({where: {id}, omit: {password: true}})
+         }
+
          async getusers(){
              const users = await this.prisma.user.findMany({omit: {password:true}})
            return {

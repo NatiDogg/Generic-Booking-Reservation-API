@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterDto } from './dto/registerDto';
 import { LoginDto } from './dto/loginDto';
@@ -31,10 +31,40 @@ export class AuthService {
       }
 
       async login(loginDetails:LoginDto){
-         
+          const normalizedEmail = loginDetails.email.toLowerCase()
+          const user = await this.userService.findUserByEmail(normalizedEmail)
+
+          if(!user){
+             throw new UnauthorizedException('Invalid Credentials!')
+          }
+
+          const comparePassword = await this.bcryptService.matchPassword(loginDetails.password, user.password)
+
+          if(!comparePassword){
+            throw new UnauthorizedException("Invalid Credentials!")
+          }
+
+          const {password, ...safeUser} = user
+          return this.generateUserResponse(safeUser, 'Logged In Successfully')
+
+
       }
      
-      async refreshToken(){
+      async refreshToken(refreshToken: string){
+           const payload = this.jwtService.verifyRefreshToken(refreshToken)
+           if(!payload || !payload.id || !payload.email){
+               throw new UnauthorizedException("Invalid Token")
+           }
+
+           const user = await this.userService.findUserById(payload.id)
+
+           if(!user){
+             throw new UnauthorizedException("user Not Found")
+           }
+
+           return this.generateUserResponse(user, 'Refresh Token issued Successfully')
+
+           
 
       }
 
