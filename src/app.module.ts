@@ -9,6 +9,7 @@ import { AuthCommonModule } from './auth-shared-module/auth-shared-module.module
 import { UserModule } from './user/user.module';
 import {ThrottlerGuard, ThrottlerModule} from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core';
+import { ResourcesModule } from './resources/resources.module';
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal: true, validate})
@@ -16,7 +17,9 @@ import { APP_GUARD } from '@nestjs/core';
 
     ThrottlerModule.forRoot({
         throttlers: [{ttl: 60000, limit: 20}]
-    })
+    }),
+
+    ResourcesModule
   ],
   controllers: [AppController],
   providers: [AppService, {
