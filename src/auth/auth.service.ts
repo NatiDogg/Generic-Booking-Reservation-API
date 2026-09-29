@@ -50,7 +50,21 @@ export class AuthService {
 
       }
      
-      async refreshToken(){
+      async refreshToken(refreshToken: string){
+           const payload = this.jwtService.verifyRefreshToken(refreshToken)
+           if(!payload || !payload.id || !payload.email){
+               throw new UnauthorizedException("Invalid Token")
+           }
+
+           const user = await this.userService.findUserById(payload.id)
+
+           if(!user){
+             throw new UnauthorizedException("user Not Found")
+           }
+
+           return this.generateUserResponse(user, 'Refresh Token issued Successfully')
+
+           
 
       }
 
