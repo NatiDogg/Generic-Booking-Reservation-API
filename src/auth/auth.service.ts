@@ -1,27 +1,60 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterDto } from './dto/registerDto';
 import { LoginDto } from './dto/loginDto';
+import { BcryptService } from 'src/utils/bcryptService';
+import { JwtService, TokenPayload } from 'src/utils/jwtService';
+import { User } from 'prisma/generated/prisma/client';
 
 @Injectable()
 export class AuthService {
  
-      constructor(private readonly userService:UserService) {}
+      constructor(private readonly userService:UserService, private readonly bcryptService:BcryptService, private readonly jwtService:JwtService ) {}
 
 
       async register(registerDetails: RegisterDto){
+          const normalizedEmail = registerDetails.email.toLowerCase()
+          const existingUser = await this.userService.findUserByEmail(normalizedEmail)
+
+          if(existingUser){
+            throw new ConflictException("A user with this email address already exists.")
+          }
+
+          const hashedPassword = await this.bcryptService.hashPassword(registerDetails.password)
+
+          const newlyRegisteredUser = await this.userService.createUser({...registerDetails, email: normalizedEmail, password: hashedPassword})
+
+           
+          return this.generateUserResponse(newlyRegisteredUser, 'Registered Successfully')
+
 
       }
 
       async login(loginDetails:LoginDto){
-
+         
       }
      
       async refreshToken(){
 
       }
 
-      private generateTokenResponse(){
-        
+      private generateUserResponse(user:Omit<User, 'password'>, message: string){
+              const payload:TokenPayload = {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+              }
+
+              const accessToken = this.jwtService.createAccessToken(payload)
+              const refreshToken = this.jwtService.createRefreshToken(payload)
+
+              return {
+                   success: true,
+                   message: message,
+                   user: user,
+                   accessToken: accessToken,
+                   refreshToken: refreshToken
+              }
       }
 }
