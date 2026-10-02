@@ -1,5 +1,7 @@
 import { Type } from "class-transformer";
-import { IsInt, IsNotEmpty, IsString, MaxLength, Min, MinLength } from "class-validator";
+import {  ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsString, MaxLength, Min, MinLength } from "class-validator";
+import { DayOfWeek } from "prisma/generated/prisma/enums";
+
 
 
 
@@ -28,5 +30,8 @@ export class CreateResourceDto{
       @IsInt({message: 'Price must be a Number'})
       @Min(0, {message: 'Price cannot be Negative'})
       price!: number
+
+      
+
 
 }
