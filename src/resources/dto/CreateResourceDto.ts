@@ -36,7 +36,7 @@ export class CreateResourceDto{
       @ArrayMinSize(1,{message: 'At least one resource schedule is required'})
       @ValidateNested({each: true})
       @Type(()=> CreateScheduleDto)
-      schedules!: CreateResourceDto[]
+      schedules!: CreateScheduleDto[]
 
       
 

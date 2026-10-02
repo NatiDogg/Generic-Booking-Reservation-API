@@ -1,5 +1,5 @@
 model Schedule{
-    id String @unique @default(uuid())
+    id String @id @default(uuid())
     dayOfWeek DayOfWeek
     startTime DateTime
     endTime DateTime
