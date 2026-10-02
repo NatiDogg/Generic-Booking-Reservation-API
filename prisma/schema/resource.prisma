@@ -2,7 +2,7 @@ model Resource{
     id String @id @default(uuid())
     name String
     description String
-    isActive Boolean
+    isActive Boolean  @default(true)
     location String
     price Int
     bookings Booking[]
