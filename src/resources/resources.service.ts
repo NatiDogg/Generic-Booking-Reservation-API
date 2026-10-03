@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateResourceDto } from './dto/CreateResourceDto';
 import { Prisma } from 'prisma/generated/prisma/client';
@@ -11,50 +11,55 @@ export class ResourcesService {
 
 
         async createResource(resourceDetails: CreateResourceDto){
-             
-                try {
-                    const {schedules, ...resourceInfo} = resourceDetails
-                     {/*[
-    {
-      "dayofWeek": "MONDAY",
-      "startTime": "2026-10-05T09:00:00Z",
-      "endTime": "2026-10-05T17:00:00Z"
-    }
-  ]*/}
-               
-                 const existingResource = await this.prisma.resource.findFirst({
-                where:{
+             try {
+                const {schedules, ...resourceInfo} = resourceDetails
+                const existingResource = await this.prisma.resource.findFirst({
+                  where: {
                     name: resourceInfo.name,
                     description: resourceInfo.description,
-                    isActive: true  
+                    isActive: true
+                  }
+                })
+
+                if(existingResource){
+                   throw new ConflictException('A resource with this exact name and description already exists');
                 }
-                 })
 
-                 if(existingResource){
-                   throw new ConflictException('A resource with this exact name and description already exists')
-                 }
-
-
-                 let scheduleDetails: {id: string}[] = []
-
-                 if(schedules && schedules.length > 0){
-                    const createdSchedules = await this.schedulesService.createSchedule(schedules)
-                 }
-   
-                 
-                
-
-
-                   
-
-                        
-                } catch (error) {
-                    if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                         throw new ConflictException('')
+                const newlyCreatedResource = await this.prisma.$transaction(async(tx)=>{
+                   const createdResource = await tx.resource.create({
+                    data: {
+                       ...resourceInfo
                     }
+                   })
 
-                    throw error
+                   if(schedules && schedules.length > 0){
+                      await this.schedulesService.createSchedule(createdResource.id, schedules, tx)
+                   }
+
+                   return tx.resource.findUnique({
+                    where: {
+                      id: createdResource.id
+                    },
+                    include: {schedules: true}
+                   })
+                })
+                if (!newlyCreatedResource) {
+                 throw new NotFoundException('Failed to retrieve newly created resource');
+                 }
+
+                return {
+                   success: true,
+                   message: `Resource '${newlyCreatedResource.name}' has been created successfully`,
+                   resource: newlyCreatedResource,
                 }
+                
+             } catch (error) {
+                if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'){
+                  throw new ConflictException('A resource with this unique field already exists.');
+                }
+                throw error
+             }
+              
 
 
 
