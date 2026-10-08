@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateScheduleDto } from './dto/createScheduleDto';
 import { Prisma } from 'prisma/generated/prisma/browser';
+import { UpdateScheduleDto } from './dto/updateScheduleDto';
 
 @Injectable()
 export class SchedulesService {
@@ -13,11 +14,22 @@ export class SchedulesService {
            const client = tx || this.prisma
            const schedulesWithResourceId = scheduleDetails.map((schedule)=> ({...schedule, resourceId}))
 
-           return await client.schedule.createMany({
+           const newlyCreatedSchedule = await client.schedule.createMany({
               data: schedulesWithResourceId,
               skipDuplicates: true
            })
 
+            return {
+                 success: true,
+                 message: "Schedule Created Successfully",
+                 schedule: newlyCreatedSchedule
+            }
+
+       }
+
+       async updateSchedule(){
+             
+             
        }
 
 

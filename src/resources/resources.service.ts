@@ -4,6 +4,7 @@ import { CreateResourceDto } from './dto/CreateResourceDto';
 import { Prisma } from 'prisma/generated/prisma/client';
 import { SchedulesService } from 'src/schedules/schedules.service';
 import { QueryResourceDto } from './dto/queryResourceDto';
+import { UpdateResourceDto } from './dto/updateResourceDto';
 
 @Injectable()
 export class ResourcesService {
@@ -119,7 +120,25 @@ export class ResourcesService {
                  resource: resource
              }
         }
-        async updateResource(){}
+        async updateResource(resourceId: string,resourceDetails:UpdateResourceDto){
+              const {schedules,...restResourceDetails} = resourceDetails
+
+              const updatedResource = await this.prisma.$transaction(async(tx)=>{
+                 const updateResource = await tx.resource.update({
+                    where:{
+                      id: resourceId
+                    },
+                     data:{
+                       ...restResourceDetails
+                     }
+                 })
+
+                 
+
+              })
+
+
+        }
         async deactivateResource(){}
        
 
