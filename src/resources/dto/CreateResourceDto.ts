@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
-import {  ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsString, MaxLength, Min, MinLength } from "class-validator";
+import {  ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsString, MaxLength, Min, MinLength, ValidateNested } from "class-validator";
 import { DayOfWeek } from "prisma/generated/prisma/enums";
+import { CreateScheduleDto } from "src/schedules/dto/createScheduleDto";
 
 
 
@@ -30,6 +31,12 @@ export class CreateResourceDto{
       @IsInt({message: 'Price must be a Number'})
       @Min(0, {message: 'Price cannot be Negative'})
       price!: number
+
+      @IsArray({message: 'Schedule must be an array'})
+      @ArrayMinSize(1,{message: 'At least one resource schedule is required'})
+      @ValidateNested({each: true})
+      @Type(()=> CreateScheduleDto)
+      schedules!: CreateScheduleDto[]
 
       
 
