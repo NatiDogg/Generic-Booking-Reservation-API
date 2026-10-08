@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateResourceDto } from './dto/CreateResourceDto';
 import { Prisma } from 'prisma/generated/prisma/client';
 import { SchedulesService } from 'src/schedules/schedules.service';
+import { QueryResourceDto } from './dto/queryResourceDto';
 
 @Injectable()
 export class ResourcesService {
@@ -64,11 +65,31 @@ export class ResourcesService {
 
 
         }
-        async getResources(){
+        async getResources(query: QueryResourceDto){
+            const {name,location,minPrice,maxPrice,date} = query
+
+            const queryCondition = {
+                  ...(name && {
+                     name: {contains: name, mode: 'insensitive' as const }
+                  }),
+                  ...(location && {
+                      location: {contains: location, mode: 'insensitive' as const}
+                  }),
+                  ...((minPrice !== undefined || maxPrice !== undefined) && {
+                     price: {
+                         ...(minPrice !== undefined && {gte: minPrice}),
+                         ...(maxPrice !== undefined && {lte: maxPrice})
+                     }
+                  }),
+                  ...(date && {
+                      schedules: {some: {startTime: date}}
+                  })
+                  
+            }
+
+
             const resources = await this.prisma.resource.findMany({
-                where:{
-                   isActive: true
-                }
+                where: queryCondition
             })
 
             return  {
