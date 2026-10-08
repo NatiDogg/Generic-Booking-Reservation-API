@@ -64,8 +64,40 @@ export class ResourcesService {
 
 
         }
-        async getResources(){}
-        async getResource(){}
+        async getResources(){
+            const resources = await this.prisma.resource.findMany({
+                where:{
+                   isActive: true
+                }
+            })
+
+            return  {
+                success: true,
+                message: 'Resources retrieved successfully',
+                resources: resources
+            }
+        }
+        async getResource(resourceId: string){
+             const resource = await this.prisma.resource.findUnique({
+                where:{
+                   id: resourceId,
+                   isActive: true
+                },
+                include:{
+                    schedules: true
+                }
+             })
+
+             if(!resource){
+               throw new NotFoundException('Resource not Found')
+             }
+
+             return {
+                 success: true,
+                 message: 'Resource Retrieved Successfully',
+                 resource: resource
+             }
+        }
         async updateResource(){}
         async deactivateResource(){}
        
