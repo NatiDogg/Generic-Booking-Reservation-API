@@ -151,7 +151,39 @@ export class ResourcesService {
 
 
         }
-        async deactivateResource(){}
+        async deactivateResource(resourceId: string){
+               
+             try {
+               const deactivatedResource = await this.prisma.$transaction(async(tx)=>{
+                     const resource = await tx.resource.update({
+                        where: {id: resourceId, isActive: true},
+                        data: {isActive: false}
+                     })
+
+                  await tx.booking.updateMany({
+                      where:{resourceId: resource.id, startTime: {gte: new Date()}},
+                      data: {status: 'CANCELLED'}
+                  })
+
+                  return resource
+               })
+
+               return {
+                  success: true,
+                  message: "Resource deactivated successfully",
+                  resource: deactivatedResource
+               }
+
+
+                 
+             } catch (error) {
+                if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'){
+                  throw new NotFoundException("Resource not Found")
+               }
+
+               throw error
+             }
+        }
        
 
 
