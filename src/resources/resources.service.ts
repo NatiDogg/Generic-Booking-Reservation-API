@@ -83,15 +83,16 @@ export class ResourcesService {
                      }
                   }),
                   ...(date && {
-                      schedules: {some: {startTime: date}}
+                      schedules: {some: {startTime: {lte: new Date(new Date(date).setHours(23, 59, 59, 999))}, endTime: {gte: new Date(new Date(date).setHours(0, 0, 0, 0))}}}
                   })
                   
             }
 
 
             const resources = await this.prisma.resource.findMany({
-                where: queryCondition
-            })
+                where: queryCondition,
+                include:{schedules: true}
+            } )
 
             return  {
                 success: true,
@@ -121,25 +122,68 @@ export class ResourcesService {
              }
         }
         async updateResource(resourceId: string,resourceDetails:UpdateResourceDto){
-              const {schedules,...restResourceDetails} = resourceDetails
-
-              const updatedResource = await this.prisma.$transaction(async(tx)=>{
-                 const updateResource = await tx.resource.update({
-                    where:{
+              const {schedules, ...resourceInfo} = resourceDetails
+            try {
+                
+               const updatedResource = await this.prisma.resource.update({
+                   where:{
                       id: resourceId
-                    },
-                     data:{
-                       ...restResourceDetails
-                     }
-                 })
+                   },
+                   data:{
+                      ...resourceInfo
+                   },
+                   include:{schedules: true}
+               })
 
-                 
+               return {
+                  success: true,
+                  message: 'Resource Updated Successfully',
+                  resource: updatedResource
+               }
+               
+            } catch (error) {
+               if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'){
+                  throw new NotFoundException("Resource not Found")
+               }
 
-              })
+               throw error
+            }
 
 
         }
-        async deactivateResource(){}
+        async deactivateResource(resourceId: string){
+               
+             try {
+               const deactivatedResource = await this.prisma.$transaction(async(tx)=>{
+                     const resource = await tx.resource.update({
+                        where: {id: resourceId, isActive: true},
+                        data: {isActive: false}
+                     })
+
+                  await tx.booking.updateMany({
+                      where:{resourceId: resource.id, startTime: {gte: new Date()}},
+                      data: {status: 'CANCELLED'}
+                  })
+
+                  return resource
+               })
+
+               return {
+                  success: true,
+                  message: "Resource deactivated successfully",
+                  resource: deactivatedResource
+               }
+
+
+                 
+             } catch (error) {
+                if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'){
+                  throw new NotFoundException("Resource not Found")
+               }
+
+               throw error
+             }
+        }
        
 
 
