@@ -4,17 +4,20 @@ import { CreateScheduleDto } from './dto/createScheduleDto';
 import { Prisma } from 'prisma/generated/prisma/browser';
 import { UpdateScheduleDto } from './dto/updateScheduleDto';
 
+
 @Injectable()
 export class SchedulesService {
 
        constructor(private prisma:PrismaService){}
 
 
-       async createSchedule(resourceId: string,scheduleDetails: CreateScheduleDto[], tx?:Prisma.TransactionClient){
+       async createSchedule(resourceId: string,scheduleDetails: CreateScheduleDto[] | CreateScheduleDto, tx?:Prisma.TransactionClient){
            const client = tx || this.prisma
-           const schedulesWithResourceId = scheduleDetails.map((schedule)=> ({...schedule, resourceId}))
 
-           const newlyCreatedSchedule = await client.schedule.createMany({
+           const detailsArray = Array.isArray(scheduleDetails) ? scheduleDetails : [scheduleDetails];
+           const schedulesWithResourceId = detailsArray.map((schedule) => ({ ...schedule, resourceId }));
+
+           const newlyCreatedSchedule = await client.schedule.createManyAndReturn({
               data: schedulesWithResourceId,
               skipDuplicates: true
            })
