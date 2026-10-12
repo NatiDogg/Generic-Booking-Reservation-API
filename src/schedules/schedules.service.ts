@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateScheduleDto } from './dto/createScheduleDto';
 import { Prisma as PrismaTransaction  } from 'prisma/generated/prisma/browser';
@@ -93,6 +93,47 @@ export class SchedulesService {
                      message: 'Schedules retrieved Successfully',
                      schedules: schedules
                }
+       }
+
+       async deleteSchedule(scheduleId: string){
+          try {
+               const deletedSchedule = await this.prisma.$transaction(
+                    async(tx)=>{
+                       const existsBookingWithSchedule = await tx.booking.findFirst({
+                          where:{
+                              
+                              resource:{
+                                   schedules: {some: {id: scheduleId}}
+                              },
+                              startTime: {gte: new Date()},
+
+                          }
+                       })
+
+                       if(existsBookingWithSchedule){
+                            throw new ConflictException('Cannot delete a schedule with active bookings')
+                       }
+
+                       await tx.schedule.delete({
+                          where: {id: scheduleId}
+                       })
+
+                    }
+               )
+
+               return {
+                    success: true,
+                    message: "Schedule Deleted Successfully",
+                    schedule: deletedSchedule
+               }
+          } catch (error) {
+               if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'){
+                    throw new NotFoundException('Schedule Not Found')
+               }
+
+               throw error
+          }
+            
        }
 
 
