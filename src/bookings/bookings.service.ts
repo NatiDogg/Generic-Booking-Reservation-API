@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/createBookingDto';
+import { Resource } from 'prisma/generated/prisma/client';
 
 @Injectable()
 export class BookingsService {
@@ -8,10 +9,11 @@ export class BookingsService {
         constructor(private prisma:PrismaService){}
 
 
-        //post /booking/resource/:id
-        async createBooking(userId: string, bookingDetails:CreateBookingDto, resourceId: string){
+        //post /bookings/resource/:id
+        async createBooking(userId: string, bookingDetails:CreateBookingDto, resource: Resource){
                 try {
-
+                 
+                
                     
                     
                 } catch (error) {
