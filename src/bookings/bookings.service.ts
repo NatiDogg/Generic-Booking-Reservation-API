@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/createBookingDto';
-import { Resource } from 'prisma/generated/prisma/client';
+import { Resource,Prisma } from 'prisma/generated/prisma/client';
 
+type ResourceWithRelations = Prisma.ResourceGetPayload<{include: {bookings: true, schedules: true}}>
 @Injectable()
 export class BookingsService {
 
@@ -10,9 +11,10 @@ export class BookingsService {
 
 
         //post /bookings/resource/:id
-        async createBooking(userId: string, bookingDetails:CreateBookingDto, resource: Resource){
+        async createBooking(userId: string, bookingDetails:CreateBookingDto, resource: ResourceWithRelations ){
                 try {
                  
+                   const {} = resource
                 
                     
                     
