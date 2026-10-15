@@ -3,6 +3,7 @@ import { IsDate, IsNotEmpty } from "class-validator";
 
 export class CreateBookingDto{
 
+    
     @IsNotEmpty({message: 'Start Time is required'})
     @Type(()=> Date)
     @IsDate({message: 'Start time must be a valid ISO Date'})
