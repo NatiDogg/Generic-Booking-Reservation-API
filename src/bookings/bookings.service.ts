@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/createBookingDto';
@@ -95,12 +97,94 @@ export class BookingsService {
       throw error;
     }
   }
-  //patch /booking/:id
-  async updateBooking(bookingId: string, userId: string, updateDetails: UpdateBookingDto) {
-   
-         
+  // PATCH /booking/:id
+  async updateBooking(
+    bookingId: string,
+    userId: string,
+    updateDetails: UpdateBookingDto,
+    resource: ResourceWithRelations,
+  ) {
+    try {
+      // 1. Find the existing booking in the resource's loaded bookings
+      const existingBooking = resource.bookings.find((b) => b.id === bookingId);
+      if (!existingBooking) {
+        throw new NotFoundException('Booking not found.');
+      }
 
+      if(existingBooking.userId !== userId){
+        throw new UnauthorizedException('You are unauthorized to update this booking.');
+      }
+
+      // 2. Handle partial updates: falling back to existing values if not provided
+      const startDate = updateDetails.startTime ? new Date(updateDetails.startTime) : existingBooking.startTime;
+      const endDate = updateDetails.endTime ? new Date(updateDetails.endTime) : existingBooking.endTime;
+
+    
+      if (startDate >= endDate) {
+        throw new BadRequestException('Booking start time must be strictly before the end time.');
+      }
+
+      
+      if (startDate < new Date()) {
+        throw new BadRequestException('Cannot update a booking to a time in the past.');
+      }
+
+      const startDayOfWeek = this.daysMap[startDate.getUTCDay()];
+      const endDayofWeek = this.daysMap[endDate.getUTCDay()];
+
+      const validResourceSchedule = resource.schedules.find((schedule) => {
+        return (
+          schedule.dayOfWeek === startDayOfWeek &&
+          schedule.dayOfWeek === endDayofWeek &&
+          startDate >= schedule.startTime &&
+          endDate <= schedule.endTime
+        );
+      });
+
+      if (!validResourceSchedule) {
+        throw new ConflictException(
+          'The requested booking time falls outside of the resource available operating schedule.',
+        );
+      }
+
+      // 6. Overlap Check 
+      const isResourceBooked = resource.bookings.find((booking) => {
+        return (
+          booking.id !== bookingId && 
+          startDate < booking.endTime && 
+          endDate > booking.startTime
+        );
+      });
+
+      if (isResourceBooked) {
+        throw new ConflictException(
+          'This resource is already booked for the selected time slot. Please choose a different time.',
+        );
+      }
+
+      
+      const updatedBooking = await this.prisma.booking.update({
+        where: { id: bookingId, userId: userId },
+        data: {
+          ...updateDetails,
+          ...(updateDetails.startTime && { startTime: startDate }),
+          ...(updateDetails.endTime && { endTime: endDate }),
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Booking Updated Successfully',
+        booking: updatedBooking,
+      };
+
+    } catch (error) {
+      throw error;
+    }
   }
+
+
+
   //get /booking/
   async getBookings() {}
 
