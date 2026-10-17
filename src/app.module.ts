@@ -11,6 +11,7 @@ import {ThrottlerGuard, ThrottlerModule} from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core';
 import { ResourcesModule } from './resources/resources.module';
 import { SchedulesModule } from './schedules/schedules.module';
+import { BookingsModule } from './bookings/bookings.module';
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal: true, validate})
@@ -22,7 +23,9 @@ import { SchedulesModule } from './schedules/schedules.module';
 
     ResourcesModule,
 
-    SchedulesModule
+    SchedulesModule,
+
+    BookingsModule
   ],
   controllers: [AppController],
   providers: [AppService, {
