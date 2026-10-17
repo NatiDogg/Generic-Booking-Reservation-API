@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/createBookingDto';
 import { Resource,Prisma, DayOfWeek } from 'prisma/generated/prisma/client';
@@ -32,6 +32,23 @@ export class BookingsService {
                         return (schedule.dayOfWeek === startDayOfWeek && schedule.dayOfWeek === endDayofWeek) && schedule.startTime >=bookingDates.startDate && schedule.endTime <= bookingDates.endDate
                  }
                 )
+
+                if(!validResourceSchedule){
+                        throw new ConflictException('')
+                }
+
+                // i am going to check if the booking starttime and endTime is not in the range of already Booked resource
+                const isResourceBooked = resource.bookings.find((booking)=>{
+
+                    if(booking.startTime >= new Date() && (booking.status === 'PENDING' || booking.status === 'CONFIRMED')){
+                      return (startDayOfWeek === this.daysMap[new Date(booking.startTime).getUTCDay()]  ) && (bookingDates.startDate <= booking.startTime)
+
+                     }
+
+                   
+                })
+
+
 
                   
 
