@@ -11,6 +11,7 @@ import { CreateBookingDto } from './dto/createBookingDto';
 import {  Prisma, DayOfWeek,Role, User } from 'prisma/generated/prisma/client';
 
 import { UpdateBookingDto } from './dto/updateBookingDto';
+import { ChangeBookingStatusDto } from './dto/changeBookingStatusDto';
 
 type ResourceWithRelations = Prisma.ResourceGetPayload<{
   include: { bookings: true; schedules: true };
@@ -224,9 +225,36 @@ export class BookingsService {
     };
 }
 
-  //patch /booking/:id/status
-  async changeBookingStatus() {}
+  //PATCH /bookings/:id/status?status=''
+ async changeBookingStatus(bookingId: string, statusChange: ChangeBookingStatusDto) {
+  const { status } = statusChange;
 
+ 
+  const existingBooking = await this.prisma.booking.findUnique({
+    where: { id: bookingId },
+  });
+
+  if (!existingBooking) {
+    throw new NotFoundException('Booking not found.');
+  }
+
+  
+  if (existingBooking.status === status) {
+    throw new ConflictException(`Booking is already in ${status} status.`);
+  }
+
+
+  const updatedBooking = await this.prisma.booking.update({
+    where: { id: bookingId },
+    data: { status },
+  });
+
+  return {
+    success: true,
+    message: 'Booking Status Updated Successfully',
+    booking: updatedBooking,
+  };
+}
   //delete /booking/:id
   async deleteBooking() {}
 }
