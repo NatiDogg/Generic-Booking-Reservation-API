@@ -12,6 +12,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ResourcesModule } from './resources/resources.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { EventsModule } from './events/events.module';
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal: true, validate})
@@ -25,7 +26,9 @@ import { BookingsModule } from './bookings/bookings.module';
 
     SchedulesModule,
 
-    BookingsModule
+    BookingsModule,
+
+    EventsModule
   ],
   controllers: [AppController],
   providers: [AppService, {
