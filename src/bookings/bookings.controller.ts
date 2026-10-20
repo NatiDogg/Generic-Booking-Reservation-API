@@ -1,4 +1,4 @@
-import { Body, Controller,Get,NotFoundException,Param,ParseUUIDPipe,Patch,Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller,Delete,Get,NotFoundException,Param,ParseUUIDPipe,Patch,Post, Query, UseGuards } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { ResourceExistPipe } from 'src/resources/pipes/ResourceExistPipe';
 import {  type User,type Prisma} from 'prisma/generated/prisma/client';
@@ -66,9 +66,14 @@ export class BookingsController {
 
         @Roles(Role.ADMIN)
         @UseGuards(jwtAuthGuard,RolesGuard)
-        @Patch('bookings/:id/status')
+        @Patch(':id/status')
         async changeBookingStatus(@Param('id', ParseUUIDPipe) id: string, @Query() queryDto: ChangeBookingStatusDto){
            return await this.bookingsService.changeBookingStatus(id,queryDto)
+        }
+        @UseGuards(jwtAuthGuard)
+        @Delete(':id/cancel')
+        async cancelBooking(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: Omit<User, 'password'>){
+          return await this.bookingsService.cancelBooking(id, user.id, user.role)
         }
 
 }

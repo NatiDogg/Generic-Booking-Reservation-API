@@ -255,6 +255,37 @@ export class BookingsService {
     booking: updatedBooking,
   };
 }
-  //delete /booking/:id
-  async deleteBooking() {}
+  //delete /bookings/:id/cancel
+ async cancelBooking(bookingId: string, userId: string, userRole: Role) {
+  
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found.');
+    }
+
+   
+    if (userRole !== Role.ADMIN && booking.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to cancel this booking.');
+    }
+
+    
+    if (booking.status === 'CANCELLED') {
+      throw new ConflictException('This booking is already cancelled.');
+    }
+
+    
+    const cancelledBooking = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return {
+      success: true,
+      message: 'Booking Cancelled Successfully',
+      booking: cancelledBooking,
+    };
+  }
 }
