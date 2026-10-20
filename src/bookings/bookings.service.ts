@@ -1,14 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/createBookingDto';
-import {  Prisma, DayOfWeek } from 'prisma/generated/prisma/client';
+import {  Prisma, DayOfWeek,Role, User } from 'prisma/generated/prisma/client';
+
 import { UpdateBookingDto } from './dto/updateBookingDto';
+import { ChangeBookingStatusDto } from './dto/changeBookingStatusDto';
 
 type ResourceWithRelations = Prisma.ResourceGetPayload<{
   include: { bookings: true; schedules: true };
@@ -184,16 +187,105 @@ export class BookingsService {
   }
 
 
+  //get /bookings/
+  async getBookings(user: Omit<User, 'password'> ) {
+    
+     const bookings = await this.prisma.booking.findMany({
+      where: user.role === Role.ADMIN ? {} : { userId: user.id }
+      });
 
-  //get /booking/
-  async getBookings() {}
+     return {
+      success: true,
+      message: "Bookings Retrieved Successfully",
+      bookings: bookings
+     }
+      
+  }
 
   //get /booking/:id
-  async getBooking() {}
+ async getBooking(bookingId: string, user: Omit<User, 'password'>) {
+    const booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {resource: true}
+    });
 
-  //patch /booking/:id/status
-  async changeBookingStatus() {}
+    if (!booking) {
+        throw new NotFoundException('Booking not found.');
+    }
 
-  //delete /booking/:id
-  async deleteBooking() {}
+    
+    if (user.role !== Role.ADMIN && booking.userId !== user.id) {
+        throw new ForbiddenException('You do not have permission to view this booking.');
+    }
+
+    return {
+        success: true,
+        message: 'Booking Detail Retrieved Successfully',
+        booking: booking
+    };
+}
+
+  //PATCH /bookings/:id/status?status=''
+ async changeBookingStatus(bookingId: string, statusChange: ChangeBookingStatusDto) {
+  const { status } = statusChange;
+
+ 
+  const existingBooking = await this.prisma.booking.findUnique({
+    where: { id: bookingId },
+  });
+
+  if (!existingBooking) {
+    throw new NotFoundException('Booking not found.');
+  }
+
+  
+  if (existingBooking.status === status) {
+    throw new ConflictException(`Booking is already in ${status} status.`);
+  }
+
+
+  const updatedBooking = await this.prisma.booking.update({
+    where: { id: bookingId },
+    data: { status },
+  });
+
+  return {
+    success: true,
+    message: 'Booking Status Updated Successfully',
+    booking: updatedBooking,
+  };
+}
+  //delete /bookings/:id/cancel
+ async cancelBooking(bookingId: string, userId: string, userRole: Role) {
+  
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found.');
+    }
+
+   
+    if (userRole !== Role.ADMIN && booking.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to cancel this booking.');
+    }
+
+    
+    if (booking.status === 'CANCELLED') {
+      throw new ConflictException('This booking is already cancelled.');
+    }
+
+    
+    const cancelledBooking = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return {
+      success: true,
+      message: 'Booking Cancelled Successfully',
+      booking: cancelledBooking,
+    };
+  }
 }

@@ -1,12 +1,16 @@
-import { Body, Controller,NotFoundException,Param,ParseUUIDPipe,Patch,Post, UseGuards } from '@nestjs/common';
+import { Body, Controller,Delete,Get,NotFoundException,Param,ParseUUIDPipe,Patch,Post, Query, UseGuards } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { ResourceExistPipe } from 'src/resources/pipes/ResourceExistPipe';
-import type {  User,Prisma} from 'prisma/generated/prisma/client';
+import {  type User,type Prisma} from 'prisma/generated/prisma/client';
 import { CreateBookingDto } from './dto/createBookingDto';
 import { jwtAuthGuard } from 'src/auth/guards/jwtAuthGuard';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UpdateBookingDto } from './dto/updateBookingDto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Roles } from 'src/auth/decorators/rolesDecorator';
+import {Role} from 'prisma/generated/prisma/enums'
+import { RolesGuard } from 'src/auth/guards/rolesGuard';
+import { ChangeBookingStatusDto } from './dto/changeBookingStatusDto';
 
 type ResourceWithRelations = Prisma.ResourceGetPayload<{include: {schedules: true, bookings: true}}>
 @Controller('bookings')
@@ -46,4 +50,30 @@ export class BookingsController {
         );
 
         }
+
+
+        @UseGuards(jwtAuthGuard)
+        @Get('')
+        async getBookings(@CurrentUser() user: Omit<User, 'password'>){
+            return await this.bookingsService.getBookings(user)
+        }
+
+        @UseGuards(jwtAuthGuard)
+        @Get(':id')
+        async getBooking(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: Omit<User, 'password'>){
+           return await this.bookingsService.getBooking(id, user)
+        }
+
+        @Roles(Role.ADMIN)
+        @UseGuards(jwtAuthGuard,RolesGuard)
+        @Patch(':id/status')
+        async changeBookingStatus(@Param('id', ParseUUIDPipe) id: string, @Query() queryDto: ChangeBookingStatusDto){
+           return await this.bookingsService.changeBookingStatus(id,queryDto)
+        }
+        @UseGuards(jwtAuthGuard)
+        @Delete(':id/cancel')
+        async cancelBooking(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: Omit<User, 'password'>){
+          return await this.bookingsService.cancelBooking(id, user.id, user.role)
+        }
+
 }
