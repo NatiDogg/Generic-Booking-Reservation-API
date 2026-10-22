@@ -5,11 +5,12 @@ import { LoginDto } from './dto/loginDto';
 import { BcryptService } from 'src/utils/bcryptService';
 import { JwtService, TokenPayload } from 'src/utils/jwtService';
 import { User } from 'prisma/generated/prisma/client';
+import { UserEventsService } from 'src/events/userEventsService';
 
 @Injectable()
 export class AuthService {
  
-      constructor(private readonly userService:UserService, private readonly bcryptService:BcryptService, private readonly jwtService:JwtService ) {}
+      constructor(private readonly userService:UserService, private readonly bcryptService:BcryptService, private readonly jwtService:JwtService, private readonly userEventsService:UserEventsService ) {}
 
 
       async register(registerDetails: RegisterDto){
@@ -24,8 +25,12 @@ export class AuthService {
 
           const newlyRegisteredUser = await this.userService.createUser({...registerDetails, email: normalizedEmail, password: hashedPassword})
 
+          const {password, ...safeUser} = newlyRegisteredUser
+
+          //emit the user registered event
+          this.userEventsService.emitUserRegistered(safeUser)
            
-          return this.generateUserResponse(newlyRegisteredUser, 'Registered Successfully')
+          return this.generateUserResponse(safeUser, 'Registered Successfully')
 
 
       }
