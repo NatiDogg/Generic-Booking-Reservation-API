@@ -20,7 +20,7 @@ export class ResourceEventsService{
              timestamp: new Date()
         }
 
-        this.eventEmitter.emit('event.updated', updatedResource)
+        this.eventEmitter.emit('resource.updated', updatedResource)
     }
 
 }

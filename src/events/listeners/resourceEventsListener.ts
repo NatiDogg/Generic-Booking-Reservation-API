@@ -9,7 +9,7 @@ export class ResourceEventsListener {
 
   private readonly logger = new Logger(ResourceEventsListener.name);
 
-  @OnEvent('event.updated')
+  @OnEvent('resource.updated')
   async handleResourceUpdatedEvent(resource: ResourceUpdatedEvent) {
     const affectedBookings = await this.prisma.booking.findMany({
       where: {
