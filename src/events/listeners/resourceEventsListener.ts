@@ -35,7 +35,7 @@ export class ResourceEventsListener {
     }
 
     if (resource.oldResource.description !== resource.updatedResource.description) {
-      changes.push(`Resource: ${resource.updatedResource.name}Description has been updated.`);
+      changes.push(`Description for "${resource.updatedResource.name}" has been updated.`);
     }
 
    
