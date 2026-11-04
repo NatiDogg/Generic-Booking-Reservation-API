@@ -5,11 +5,13 @@ import { Prisma } from 'prisma/generated/prisma/client';
 import { SchedulesService } from 'src/schedules/schedules.service';
 import { QueryResourceDto } from './dto/queryResourceDto';
 import { UpdateResourceDto } from './dto/updateResourceDto';
+import { ResourceEventsService } from 'src/events/resourceEventsService';
+
 
 @Injectable()
 export class ResourcesService {
 
-        constructor(private prisma:PrismaService, private readonly schedulesService:SchedulesService){}
+        constructor(private prisma:PrismaService, private readonly schedulesService:SchedulesService, private readonly resourceEventsService:ResourceEventsService){}
 
 
         async createResource(resourceDetails: CreateResourceDto){
@@ -125,21 +127,33 @@ export class ResourcesService {
               const {schedules, ...resourceInfo} = resourceDetails
             try {
                 
-               const updatedResource = await this.prisma.resource.update({
-                   where:{
-                      id: resourceId
-                   },
-                   data:{
-                      ...resourceInfo
-                   },
-                   include:{schedules: true}
-               })
+               const oldResource = await this.prisma.resource.findUnique({
+                  where: { id: resourceId },
+                 include: { schedules: true },
+               });
 
-               return {
-                  success: true,
-                  message: 'Resource Updated Successfully',
-                  resource: updatedResource
-               }
+               if (!oldResource) {
+                throw new NotFoundException("Resource not Found");
+                }
+
+   
+              const updatedResource = await this.prisma.resource.update({
+               where: { id: resourceId },
+               data: { ...resourceInfo },
+                include: { schedules: true },
+              });
+   
+    
+             this.resourceEventsService.emitResourceUpdated({
+                     oldResource,
+                    updatedResource,
+                 });
+
+                    return {
+                      success: true,
+                       message: 'Resource Updated Successfully',
+                      resource: updatedResource,
+                     };
                
             } catch (error) {
                if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'){
